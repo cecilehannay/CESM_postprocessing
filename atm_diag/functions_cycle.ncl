@@ -8,6 +8,45 @@
 month = (/"01","02","03","04","05","06", \
           "07","08","09","10","11","12"/)
 
+
+function cycle_U10 (prefix:string,outptr:file,latv:float,lonv:float,site:string)
+begin
+
+  VNAME = "U10_"+site
+
+  if (isfilevar(outptr,VNAME)) then
+    u10 = outptr->$VNAME$
+  else
+    inptr = addfile(prefix+"_01_climo.nc","r")
+
+    u10 = new((/13/),float)
+    u10!0 = "time"
+    u10&time = ispan(1,13,1)
+    
+    do m = 0, 11
+      inptr = addfile(prefix+"_"+month(m)+"_climo.nc","r")
+      tmp = inptr->U10(0,:,:)     
+
+      if (typeof(tmp).eq."double") then
+        data = dble2flt(tmp)
+      else
+        data = tmp
+      end if
+
+       u10(m) = (/tmp({latv},{lonv})/)
+
+    end do
+    u10(12) = (/u10(0)/)        ; wrap around to jan 
+    u10@long_name = "10m wind"
+    u10@units = "m/s"
+    outptr->$VNAME$ = u10
+  end if
+  return (u10)
+end
+
+
+
+
 function cycle_FLNT (prefix:string,outptr:file)
 begin
   if (isfilevar(outptr,"FLNT")) then
@@ -610,6 +649,45 @@ begin
 end
 
 
+
+function cycle_TS (prefix:string,outptr:file,latv:float,lonv:float,site:string)
+begin
+
+  VNAME = "TS_"+site
+
+  if (isfilevar(outptr,VNAME)) then
+    ts = outptr->$VNAME$
+  else
+    inptr = addfile(prefix+"_01_climo.nc","r")
+
+    ts = new((/13/),float)
+    ts!0 = "time"
+    ts&time = ispan(1,13,1)
+    
+    do m = 0, 11
+      inptr = addfile(prefix+"_"+month(m)+"_climo.nc","r")
+      tmp = inptr->TS(0,:,:)
+
+      if (typeof(tmp).eq."double") then
+        data = dble2flt(tmp)
+      else
+        data = tmp
+      end if
+
+       ts(m) = (/tmp({latv},{lonv})/)
+
+    end do
+    ts(12) = (/ts(0)/)        ; wrap around to jan 
+    ts@long_name = "Surface temperature"
+    ts@units = "K"
+    assignFillValue(ts,ts)
+    outptr->$VNAME$ = ts
+  end if
+  return (ts)
+end
+
+
+
 function cycle_FSDS (prefix:string,outptr:file,latv:float,lonv:float,site:string)
 begin
 
@@ -646,6 +724,84 @@ begin
   return (fsds)
 end
 
+
+function cycle_FSNS (prefix:string,outptr:file,latv:float,lonv:float,site:string)
+begin
+
+  VNAME = "FSNS_"+site
+
+  if (isfilevar(outptr,VNAME)) then
+    fsns = outptr->$VNAME$
+  else
+    inptr = addfile(prefix+"_01_climo.nc","r")
+
+    fsns = new((/13/),float)
+    fsns!0 = "time"
+    fsns&time = ispan(1,13,1)
+    
+    do m = 0, 11
+      inptr = addfile(prefix+"_"+month(m)+"_climo.nc","r")
+      tmp = inptr->FSNS(0,:,:)     
+
+      if (typeof(tmp).eq."double") then
+        data = dble2flt(tmp)
+      else
+        data = tmp
+      end if
+
+       fsns(m) = (/tmp({latv},{lonv})/)
+
+    end do
+    fsns(12) = (/fsns(0)/)        ; wrap around to jan 
+    fsns@long_name = "Net SW at Surface"
+    fsns@units = "W/m:S:2:N:"
+    assignFillValue(fsns,fsns)
+    outptr->$VNAME$ = fsns
+  end if
+  return (fsns)
+end
+
+
+function cycle_FSUS (prefix:string,outptr:file,latv:float,lonv:float,site:string)
+begin
+
+  VNAME = "FSUS_"+site
+
+  if (isfilevar(outptr,VNAME)) then
+    flns = outptr->$VNAME$
+  else
+    inptr = addfile(prefix+"_01_climo.nc","r")
+
+    fsus = new((/13/),float)
+    fsus!0 = "time"
+    fsus&time = ispan(1,13,1)
+    
+    do m = 0, 11
+      inptr = addfile(prefix+"_"+month(m)+"_climo.nc","r")
+
+      tmp_net  = inptr->FSNS(0,:,:) 
+      tmp_down = inptr->FSDS(0,:,:) 
+      tmp = tmp_net
+      tmp = (/tmp_down-tmp_net/)
+
+
+      if (typeof(tmp).eq."double") then
+        data = dble2flt(tmp)
+      else
+        data = tmp
+      end if
+
+       fsus(m) = (/tmp({latv},{lonv})/)
+
+    end do
+    fsus(12) = (/fsus(0)/)        ; wrap around to jan 
+    fsus@long_name = "Upwelling SW at Surface"
+    fsus@units = "W/m:S:2:N:"
+    assignFillValue(fsus,fsus)
+    outptr->$VNAME$ = fsus
+  end if
+  return (fsus)
+end
 
 
 function cycle_FLDS (prefix:string,outptr:file,latv:float,lonv:float,site:string)
@@ -691,10 +847,131 @@ begin
 end
 
 
+function cycle_FLNS (prefix:string,outptr:file,latv:float,lonv:float,site:string)
+begin
+
+  VNAME = "FLNS_"+site
+
+  sigma = 5.67e-8 ; Sigma
+
+
+  if (isfilevar(outptr,VNAME)) then
+    flns = outptr->$VNAME$
+  else
+    inptr = addfile(prefix+"_01_climo.nc","r")
+
+    flns = new((/13/),float)
+    flns!0 = "time"
+    flns&time = ispan(1,13,1)
+    
+    do m = 0, 11
+      inptr = addfile(prefix+"_"+month(m)+"_climo.nc","r")
+
+      tmp = inptr->FLNS(0,:,:) 
+
+      if (typeof(tmp).eq."double") then
+        data = dble2flt(tmp)
+      else
+        data = tmp
+      end if
+
+       flns(m) = (/tmp({latv},{lonv})/)
+
+    end do
+    flns(12) = (/flns(0)/)        ; wrap around to jan 
+    flns@long_name = "Net LW at Surface"
+    flns@units = "W/m:S:2:N:"
+    assignFillValue(flds,flds)
+    outptr->$VNAME$ = flns
+  end if
+  return (flns)
+end
+
+
+function cycle_FLUS (prefix:string,outptr:file,latv:float,lonv:float,site:string)
+begin
+
+  VNAME = "FLUS_"+site
+
+  sigma = 5.67e-8 ; Sigma
+
+
+  if (isfilevar(outptr,VNAME)) then
+    flus = outptr->$VNAME$
+  else
+    inptr = addfile(prefix+"_01_climo.nc","r")
+
+    flus = new((/13/),float)
+    flus!0 = "time"
+    flus&time = ispan(1,13,1)
+    
+    do m = 0, 11
+      inptr = addfile(prefix+"_"+month(m)+"_climo.nc","r")
+      tmp_ts = inptr->TS(0,:,:)     
+      tmp = tmp_ts
+      tmp = (/sigma*tmp_ts^4/)
+
+      if (typeof(tmp).eq."double") then
+        data = dble2flt(tmp)
+      else
+        data = tmp
+      end if
+
+       flus(m) = (/tmp({latv},{lonv})/)
+
+    end do
+    flus(12) = (/flus(0)/)        ; wrap around to jan 
+    flus@long_name = "Upwelling LW at Surface"
+    flus@units = "W/m:S:2:N:"
+    assignFillValue(flus,flus)
+    outptr->$VNAME$ = flus
+  end if
+  return (flus)
+end
 
 
 
+function cycle_FSNET (prefix:string,outptr:file,latv:float,lonv:float,site:string)
+begin
 
+  VNAME = "FSNET_"+site
+
+  if (isfilevar(outptr,VNAME)) then
+    flns = outptr->$VNAME$
+  else
+    inptr = addfile(prefix+"_01_climo.nc","r")
+
+    fsnet = new((/13/),float)
+    fsnet!0 = "time"
+    fsnet&time = ispan(1,13,1)
+    
+    do m = 0, 11
+      inptr = addfile(prefix+"_"+month(m)+"_climo.nc","r")
+
+      tmp_fsns = inptr->FSNS(0,:,:) 
+      tmp_flns = inptr->FLNS(0,:,:) 
+
+      tmp = tmp_flns
+      tmp = (/tmp_fsns-tmp_flns/)
+
+
+      if (typeof(tmp).eq."double") then
+        data = dble2flt(tmp)
+      else
+        data = tmp
+      end if
+
+       fsnet(m) = (/tmp({latv},{lonv})/)
+
+    end do
+    fsnet(12) = (/fsnet(0)/)      ; wrap around to jan 
+    fsnet@long_name = "Net surface radiation"
+    fsnet@units = "W/m:S:2:N:"
+    assignFillValue(fsnet,fsnet)
+    outptr->$VNAME$ = fsnet
+  end if
+  return (fsnet)
+end
 
 
 function cycle_PREH2O (prefix:string,outptr:file)

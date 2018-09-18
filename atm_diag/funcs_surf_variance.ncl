@@ -379,6 +379,39 @@ begin
   return (vari)
 end
 
+function get_PRECL_VARIANCE (inptr:file,outptr:file) 
+local vari,  precl, tmp
+begin
+  if (isfilevar(outptr,"PRECL")) then
+    vari = outptr->PRECL
+  else
+    precl = inptr->PRECL
+    precl = (/(precl)*8.64e7/)   ; mm/day
+    prect@units = "mm/day"             ; DJS added
+    tmp   = dim_variance_n_Wrap (precl, 0)
+  ;;tmp   = dim_variance_Wrap (prect(lat|:,lon|:,time|:))
+    vari  = force_float(tmp)
+    outptr->PRECL = vari 
+  end if
+    return (vari)
+end 
+
+function get_PRECC_VARIANCE (inptr:file,outptr:file) 
+local vari,  precl, tmp
+begin
+  if (isfilevar(outptr,"PRECC")) then
+    vari = outptr->PRECC
+  else
+    precl = inptr->PRECC
+    precl = (/(precl)*8.64e7/)   ; mm/day
+    prect@units = "mm/day"             ; DJS added
+    tmp   = dim_variance_n_Wrap (precl, 0)
+  ;;tmp   = dim_variance_Wrap (prect(lat|:,lon|:,time|:))
+    vari  = force_float(tmp)
+    outptr->PRECC = vari 
+  end if
+    return (vari)
+end 
 
 function get_PRECT_VARIANCE (inptr:file,outptr:file) 
 local vari, precc, precl, prect, tmp
